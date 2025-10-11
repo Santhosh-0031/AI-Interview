@@ -1,0 +1,8 @@
+{
+  "name": "Live Interview AI Assistant",
+  "description": "An AI assistant embedded in a live interview platform. It evaluates real-time transcripts of interviewer questions and candidate answers, providing relevance scores and suggesting new questions.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
