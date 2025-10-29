@@ -2,7 +2,19 @@ import React from "react";
 import { LightbulbIcon } from "./icons";
 import ScoreGauge from "./ScoreGauge";
 
-const ResultsDisplay = ({ results, isLoading, error }) => {
+interface EvaluationResult {
+  question_relevance_score: number;
+  answer_relevance_score: number;
+  suggested_questions: string[];
+}
+
+interface ResultsDisplayProps {
+  results: EvaluationResult | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, isLoading, error }) => {
   if (isLoading) return <p className="text-[#4a9951]">Evaluating...</p>;
   if (error) return <p className="text-[#ff4d4d]">{error}</p>;
   if (!results) return <p className="text-[#444]">No results yet.</p>;

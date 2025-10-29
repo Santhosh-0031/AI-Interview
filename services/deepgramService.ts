@@ -1,10 +1,7 @@
-import { createClient, LiveTranscriptionEvents } from "@deepgram/sdk";
-import type { LiveClient, LiveSchema } from "@deepgram/sdk";
-
 // Use the API key provided by the user
-const DEEPGRAM_API_KEY = "fe8a6ce2fd13180d7ee7cf17d6d9249926a5bf49";
+const DEEPGRAM_API_KEY = "cac9bbf0a3a3949541d3d0c1ab9d93bf255c1e59"; // Use the same key as speechToText
 
-let connection: LiveClient | null = null;
+let connection: any = null;
 let mediaStream: MediaStream | null = null;
 let mediaRecorder: MediaRecorder | null = null;
 
@@ -35,49 +32,55 @@ export const startListening = async (
   };
 
   try {
-    const deepgram = createClient(DEEPGRAM_API_KEY);
+    // Create connection using fetch API instead of SDK to avoid dependency issues
+    const socket = new WebSocket(`wss://api.deepgram.com/v1/listen?model=nova-2&language=en-US&smart_format=true&interim_results=true&punctuate=true`, ['token', DEEPGRAM_API_KEY]);
     
-    const conn = deepgram.listen.live({
-      model: "nova-2",
-      language: "en-US",
-      smart_format: true,
-      interim_results: true,
-      puncutate: true
-    });
-    connection = conn;
+    connection = socket;
+    let isConnected = false;
 
-    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    mediaRecorder = new MediaRecorder(mediaStream);
-
-    conn.on(LiveTranscriptionEvents.Open, () => {
-      console.log("Deepgram connection opened.");
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && conn.getReadyState() === 1) {
-            conn.send(event.data);
-            audioChunks.push(event.data); // Also save for download
-        }
-      };
-      
-      mediaRecorder.start(250); // Start recording and send data every 250ms
+    mediaStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: 16000,
+      } 
     });
 
-    conn.on(LiveTranscriptionEvents.Transcript, (data) => {
+    mediaRecorder = new MediaRecorder(mediaStream, {
+      mimeType: 'audio/webm; codecs=opus'
+    });
+
+    socket.onopen = () => {
+      console.log("Deepgram WebSocket connection opened.");
+      isConnected = true;
+      mediaRecorder?.start(250);
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'Results' && data.channel?.alternatives?.[0]?.transcript) {
         const transcript = data.channel.alternatives[0].transcript;
-        if (transcript) {
-            onTranscriptUpdate({ transcript, is_final: data.is_final });
-        }
-    });
+        const is_final = data.is_final || false;
+        onTranscriptUpdate({ transcript, is_final });
+      }
+    };
 
-    conn.on(LiveTranscriptionEvents.Error, (err) => {
-      console.error("Deepgram Error:", err);
+    socket.onerror = (error) => {
+      console.error("Deepgram WebSocket error:", error);
       cleanup();
-    });
+    };
 
-    conn.on(LiveTranscriptionEvents.Close, () => {
-      console.log("Deepgram connection closed.");
-    });
+    socket.onclose = () => {
+      console.log("Deepgram WebSocket connection closed.");
+      isConnected = false;
+    };
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0 && isConnected) {
+        socket.send(event.data);
+        audioChunks.push(event.data);
+      }
+    };
 
   } catch (error) {
     console.error("Failed to start microphone or Deepgram connection:", error);
@@ -87,16 +90,17 @@ export const startListening = async (
   
   const stop = (): Promise<Blob | null> => {
     return new Promise((resolve) => {
-        if (mediaRecorder) {
-            mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                resolve(audioChunks.length > 0 ? audioBlob : null);
-            };
-            cleanup();
-        } else {
-            cleanup();
-            resolve(null);
-        }
+      if (mediaRecorder) {
+        mediaRecorder.onstop = () => {
+          const audioBlob = audioChunks.length > 0 ? new Blob(audioChunks, { type: 'audio/webm' }) : null;
+          cleanup();
+          resolve(audioBlob);
+        };
+        mediaRecorder.stop();
+      } else {
+        cleanup();
+        resolve(null);
+      }
     });
   };
 

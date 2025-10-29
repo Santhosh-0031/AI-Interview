@@ -93,3 +93,12 @@ export const DownloadIcon: React.FC = () => (
     <line x1="12" y1="15" x2="12" y2="3"></line>
   </svg>
 );
+
+export const SpeechToTextIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m9 10 2 2 4-4"/>
+    <path d="M5 16v-4.2C5 10.5 6.2 9 8 9c.9 0 1.8.4 2.4 1"/>
+    <path d="M19 16v-4.2c0-1.3-1.2-2.8-3-2.8-.9 0-1.8.4-2.4 1"/>
+    <rect width="18" height="12" x="3" y="6" rx="2"/>
+  </svg>
+);
