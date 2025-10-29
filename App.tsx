@@ -220,12 +220,14 @@ const App: React.FC = () => {
           </div>
         )}
         
+        {/* Jitsi Meeting Component - ALWAYS as Interviewer (recording enabled) */}
         <div className="h-[60vh] mb-8">
-           <JitsiMeetComponent 
-             roomName={roomName} 
-             displayName="Interviewer" 
-             onRecordingComplete={handleRecordingComplete}
-           />
+          <JitsiMeetComponent 
+            roomName={roomName} 
+            displayName="Interviewer"
+            onRecordingComplete={handleRecordingComplete}
+            isInterviewer={true} // Always true - only interviewer creates meetings
+          />
         </div>
 
         {/* Recordings List Section */}
@@ -235,9 +237,9 @@ const App: React.FC = () => {
             {recordings.length > 0 && (
               <button
                 onClick={clearAllRecordings}
-                className="text-sm text-red-600 hover:text-red-800 font-medium"
+                className="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1 border border-red-300 rounded hover:bg-red-50 transition"
               >
-                Clear All
+                Clear All Recordings
               </button>
             )}
           </div>
@@ -249,6 +251,7 @@ const App: React.FC = () => {
           />
         </div>
 
+        {/* Main Content Area */}
         <main className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-[#1a2e1a]/80 p-6 rounded-2xl border border-[#2e7d32]/40 shadow-2xl shadow-black/50">
             <InputForm
@@ -274,6 +277,12 @@ const App: React.FC = () => {
             />
           </div>
         </main>
+
+        {/* Room Information Footer */}
+        <footer className="mt-8 text-center text-gray-600 text-sm">
+          <p>Share this room link with your candidate: <strong className="text-[#2e7d32]">{roomName}</strong></p>
+          <p className="mt-1">Candidate will join without recording controls - only you can start/stop recordings.</p>
+        </footer>
       </div>
     </div>
   );
